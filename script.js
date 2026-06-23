@@ -10,25 +10,15 @@ const jpdbBaseUrl = "http://api.login2explore.com:5577";
 const jpdbIml = "/api/iml";
 const jpdbIrl = "/api/irl";
 
-async function executeCommandAtGivenBaseUrl(reqString, dbBaseUrl, apiEndPointUrl) {
-    const url = "https://corsproxy.io/?url=" + encodeURIComponent(dbBaseUrl + apiEndPointUrl);
-
-    try {
-        const response = await fetch(url, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: reqString
-        });
-
-        const text = await response.text();   // JPDB returns string
-        return JSON.parse(text);
-
-    } catch (error) {
-        console.error("Error:", error);
-        return null;
-    }
+function executeCommandAtGivenBaseUrl(reqString, dbBaseUrl, apiEndPointUrl) {
+    var url = dbBaseUrl + apiEndPointUrl;
+    var jsonObj;
+    $.post(url, reqString, function (result) {
+        jsonObj = JSON.parse(result);
+    }).fail(function (result) {
+        jsonObj = JSON.parse(result.responseText);
+    });
+    return jsonObj;
 }
 
 function createPUTRequest(connToken, jsonObj, dbName, relName) {
@@ -163,21 +153,22 @@ function validateData() {
     //remains
 }
 
-async function saveData() {
+function saveData() {
     var jsonStrObj = validateData();
-    if (jsonStrObj === "") return;
-
+    if (jsonStrObj === "") {
+        return "";
+    }
     var putRequest = createPUTRequest(conToken, jsonStrObj, empDBName, relName);
-
-    var resJsonObj = await executeCommandAtGivenBaseUrl(putRequest, jpdbBaseUrl, jpdbIml);
-
-    if (resJsonObj && resJsonObj.status === 200) {
+    jQuery.ajaxSetup({async: false});
+    var resJsonObj = executeCommandAtGivenBaseUrl(putRequest, jpdbBaseUrl, jpdbIml);
+    if (resJsonObj.status === 200) {
         alert("Data saved successfully");
     } else {
         alert("Error while saving data");
     }
-
+    jQuery.ajaxSetup({async: true});
     resetForm();
+    $("#rollNo").focus();
 }
 
 function saveRecNo2LS(jsonObj) {
